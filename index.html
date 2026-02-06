@@ -628,6 +628,7 @@
             </div>
             <div class="header-right">
                 <button class="btn btn-reset" onclick="saveData()">Save</button>
+                <button class="btn btn-reset" onclick="downloadCycle()">Download Cycle</button>
                 <button class="btn btn-reset" onclick="confirmReset()">Reset</button>
             </div>
         </div>
@@ -835,6 +836,59 @@
                 btn.textContent = 'Saved ✓';
                 setTimeout(() => btn.textContent = originalText, 2000);
             }
+        }
+        
+        // Download cycle data as file
+        function downloadCycle() {
+            // First save current state
+            saveData(true);
+            
+            // Get saved data
+            const saved = localStorage.getItem('unfldTimeline');
+            if (!saved) {
+                alert('No data to download. Please add some priorities and weeks first.');
+                return;
+            }
+            
+            const data = JSON.parse(saved);
+            
+            // Create readable text format
+            let text = '=== UNFLD TIMELINE - 90 DAY CYCLE ===\n\n';
+            text += `Downloaded: ${new Date().toLocaleDateString()}\n\n`;
+            
+            text += '--- TOP 3 PRIORITIES ---\n';
+            text += `Priority 1: ${data.priorities.priority1 || '(empty)'}\n`;
+            text += `Priority 2: ${data.priorities.priority2 || '(empty)'}\n`;
+            text += `Priority 3: ${data.priorities.priority3 || '(empty)'}\n\n`;
+            
+            text += '--- 90-DAY TIMELINE (13 WEEKS) ---\n';
+            for (let i = 1; i <= 13; i++) {
+                const week = data.weeks[`week${i}`];
+                const status = week.completed ? '[✓ COMPLETED]' : '[  ]';
+                text += `\nWeek ${i} ${status}\n`;
+                text += `${week.text || '(no notes)'}\n`;
+            }
+            
+            // Calculate completion
+            let completed = 0;
+            for (let i = 1; i <= 13; i++) {
+                if (data.weeks[`week${i}`].completed) completed++;
+            }
+            const percentage = Math.round((completed / 13) * 100);
+            
+            text += `\n\n--- PROGRESS ---\n`;
+            text += `${completed} of 13 weeks completed (${percentage}%)\n`;
+            
+            // Create download
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `UNFLD-Timeline-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
         
         // Load data
